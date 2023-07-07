@@ -2,3 +2,4 @@ weights_resnet18_cifar10.pth
 data/*
 .venv/*
 __pycache__
+config.json
