@@ -4,7 +4,7 @@ import numpy as np
 
 from tqdm import tqdm
 from PIL import Image
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 
@@ -51,6 +51,23 @@ class ImageDataset(Dataset):
             target = torch.tensor(self.targets[index], dtype=torch.float)
 
             return img_input, target
+
+class MonitorImageDataset(ImageDataset):
+    def __init__(self,
+        data: Dict[str, np.ndarray]
+    ):
+        super().__init__(data=data['data'], targets=data['targets'])
+
+        self.labels_which_dataset = data['labels_which_dataset']
+    
+    def __getitem__(self, index):
+        img_input = self.prepare_input(self.data[index])
+
+        target = torch.tensor(self.targets[index], dtype=torch.float)
+        label_dataset = self.labels_which_dataset[index]
+
+        return img_input, target, label_dataset
+
 
 def get_unlearning_dataset(
         config:dict, 
@@ -161,3 +178,28 @@ def get_unlearning_validation_train(
     )
 
     return (train_data, train_target), (val_data, val_target)
+
+def get_monitor_dataset(dataset: Dict[str, Dict[str, np.ndarray|list]]) -> Tuple[np.ndarray, np.ndarray]:
+    
+    output_dict = {
+        "data": np.concatenate(
+            [data_dict['data'] for _, data_dict in dataset.items()], axis=0
+        ),
+        "targets": np.concatenate(
+            [data_dict['targets'] for _, data_dict in dataset.items()], axis = 0
+        ),
+        "labels_which_dataset": np.concatenate(
+            [
+                [name_dataset]*data_dict['data'].shape[0] 
+                for name_dataset, data_dict in dataset.items()
+            ], axis=0
+        )
+    }
+
+    assert (
+        (output_dict['data'].shape[0] == output_dict['targets'].shape[0]) & 
+        (output_dict['targets'].shape[0] == output_dict['labels_which_dataset'].shape[0])
+    )
+ 
+
+    return output_dict
