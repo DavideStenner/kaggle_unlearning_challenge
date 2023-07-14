@@ -1,5 +1,6 @@
 {
     "RANDOM_STATE": 1931984871,
     "MODEL_URL": "https://unlearning-challenge.s3.eu-west-1.amazonaws.com/weights_resnet18_cifar10.pth",
-    "MODEL_FOLDER": "model"
+    "MODEL_FOLDER": "model",
+    "PLOT_FOLDER": "plot"
 }

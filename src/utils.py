@@ -34,3 +34,4 @@ def free_memory(*args) -> None:
 def ignore_warning():
     warnings.filterwarnings("ignore", message=".*No audio backend is available.*")
     warnings.filterwarnings("ignore", message=".*does not have many workers which may be a bottleneck.*")
+    warnings.filterwarnings("ignore", message=".*The figure layout has changed to tight*")
