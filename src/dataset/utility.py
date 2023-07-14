@@ -7,7 +7,8 @@ import numpy as np
 
 from torch import nn
 from PIL import Image
-from typing import Union, Dict
+from collections import OrderedDict
+from typing import Union, Dict, Tuple
 from torchvision import transforms
 from torchvision.models import resnet18
 from sklearn.model_selection import train_test_split
@@ -71,3 +72,34 @@ def load_model(
     model = resnet18(weights=None, num_classes=10)
     model.load_state_dict(weights_pretrained)
     return model
+
+def load_weights(
+        path_origin: str = './data',
+        path_model: str = './model',
+    ) -> Tuple[OrderedDict, OrderedDict]:
+
+    path_file = os.path.join(
+        path_model, "model_weights.pth"
+    )
+    path_file_original = os.path.join(
+        path_origin, "weights_resnet18_cifar10.pth"
+    )  
+    weights_unlearn = torch.load(path_file)
+    weights_original = torch.load(path_file_original)
+    
+    return weights_original, weights_unlearn
+
+def load_all_model(
+        original_weight: OrderedDict, unlearn_weight: OrderedDict
+    ) -> Dict[str, nn.Module]:
+
+    model_original = resnet18(weights=None, num_classes=10)
+    model_original.load_state_dict(original_weight)
+
+    model_unlearn = resnet18(weights=None, num_classes=10)
+    model_unlearn.load_state_dict(unlearn_weight)
+    
+    return {
+        'original': model_original, 
+        'unlearn': model_unlearn
+    }
