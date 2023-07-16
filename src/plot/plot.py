@@ -35,19 +35,19 @@ def attack_score_plot(
         mia_scores: np.ndarray, mia_scores_ft: np.ndarray
     ) -> plt.figure:
     
-    ft_forget_losses = compute_losses(model=original_model, loader=forget_loader, config=config)
-    ft_test_losses = compute_losses(model=original_model, loader=test_loader, config=config)
+    ft_forget_losses = compute_losses(model=unlearn_model, loader=forget_loader, config=config)
+    ft_test_losses = compute_losses(model=unlearn_model, loader=test_loader, config=config)
 
-    forget_losses = compute_losses(model=unlearn_model, loader=forget_loader, config=config)
-    test_losses = compute_losses(model=unlearn_model, loader=test_loader, config=config)
+    forget_losses = compute_losses(model=original_model, loader=forget_loader, config=config)
+    test_losses = compute_losses(model=original_model, loader=test_loader, config=config)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-    ax1.set_title(f"Pre-trained model.\nAttack accuracy: {mia_scores.mean():0.2f}")
+    ax1.set_title(f"Pre-trained model.\nAttack accuracy: {mia_scores.mean():0.3f}")
     ax1.hist(test_losses, density=True, alpha=0.5, bins=50, label="Test set")
     ax1.hist(forget_losses, density=True, alpha=0.5, bins=50, label="Forget set")
 
-    ax2.set_title(f"Unlearned model.\nAttack accuracy: {mia_scores_ft.mean():0.2f}")
+    ax2.set_title(f"Unlearned model.\nAttack accuracy: {mia_scores_ft.mean():0.3f}")
     ax2.hist(ft_test_losses, density=True, alpha=0.5, bins=50, label="Test set")
     ax2.hist(ft_forget_losses, density=True, alpha=0.5, bins=50, label="Forget set")
 

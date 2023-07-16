@@ -58,12 +58,13 @@ def simple_mia(sample_loss: np.ndarray, members: np.ndarray, random_state: int, 
     )
 
 def create_mia_dataset(forget_losses: np.ndarray, test_losses: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    #not in place shuffle
-    idx_forget = np.arange(forget_losses.shape[0])
-    np.random.shuffle(idx_forget)
-    idx_forget = idx_forget[:len(test_losses)]
 
-    forget_losses = forget_losses[idx_forget]
+    min_dim = min(forget_losses.shape[0], test_losses.shape[0])
+
+    np.random.shuffle(forget_losses)
+    np.random.shuffle(test_losses)
+
+    forget_losses, test_losses = forget_losses[:min_dim], test_losses[:min_dim]
 
     samples_mia = np.concatenate((test_losses, forget_losses)).reshape((-1, 1))
     labels_mia = [0] * len(test_losses) + [1] * len(forget_losses)
