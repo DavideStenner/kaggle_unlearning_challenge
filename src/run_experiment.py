@@ -17,7 +17,7 @@ from src.model.unlearn import UnLearner
 from src.model.utils import get_weights_diff
 from src.dataset.dataset import (
     get_unlearning_dataset, get_monitor_dataset, 
-    ImageDataset, MonitorImageDataset
+    ImageDataset, MonitorImageDataset, StratifiedBatchSampler
 )
 from src.dataset.utility import load_dataset
 
@@ -43,18 +43,23 @@ def run_experiment() -> None:
     unlearning_train_dataset = ImageDataset(train_data, train_target)
     unlearning_valid_dataset = ImageDataset(val_data, val_target)
 
+    unlearning_train_batch_sampler = StratifiedBatchSampler(train_target, batch_size=130, shuffle=True)
+    unlearning_valid_batch_sampler = StratifiedBatchSampler(val_target, batch_size=130, shuffle=False)
+
     unlearning_train = DataLoader(
         unlearning_train_dataset, 
-        batch_size=128, shuffle=True, num_workers=3,
-        pin_memory=True, drop_last=True,
+        batch_sampler=unlearning_train_batch_sampler, 
+        num_workers=3,
+        pin_memory=True,
     )
     unlearning_valid = DataLoader(
         unlearning_valid_dataset, 
-        batch_size=128, shuffle=False, num_workers=1,
-        pin_memory=False, drop_last=False,
+        batch_sampler=unlearning_valid_batch_sampler, 
+        num_workers=1,
+        pin_memory=False,
     )
 
-    model = UnLearner(config=config, config_model=config_model, monitor_dataset=monitor_dataloader)
+    unlearn_model = UnLearner(config=config, config_model=config_model, monitor_dataset=monitor_dataloader)
 
     unlearn_trainer = pl.Trainer(
         max_epochs=config_model['max_epochs'],
@@ -65,10 +70,10 @@ def run_experiment() -> None:
         enable_checkpointing=False,
         logger=False
     )
-    unlearn_trainer.fit(model, unlearning_train, unlearning_valid)
+    unlearn_trainer.fit(unlearn_model, unlearning_train, unlearning_valid)
 
     torch.save(
-        unlearn_trainer.model.model.state_dict(), 
+        unlearn_model.model.state_dict(), 
         os.path.join(config['MODEL_FOLDER'], "model_weights.pth")
     )
 
@@ -81,7 +86,9 @@ def eda() -> None:
     original_weight, unlearn_weight = load_weights()
 
     model_dict = load_all_model(original_weight=original_weight, unlearn_weight=unlearn_weight)
+    
     original_model, unlearn_model = model_dict['original'], model_dict['unlearn']
+    original_model, unlearn_model = original_model.eval(), unlearn_model.eval()
 
     diff_res = get_weights_diff(original_weight, unlearn_weight)
 

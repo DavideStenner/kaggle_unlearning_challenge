@@ -7,10 +7,12 @@ from PIL import Image
 from typing import Optional, Tuple, Dict
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
+from sklearn.model_selection import StratifiedKFold
 
 from src.utils import free_memory
 from src.dataset.utility import load_model
 
+COEF_K = -2.19722
 class ImageDataset(Dataset):
     def __init__(self,
         data: np.ndarray, targets: Optional[list|np.ndarray] = None
@@ -69,10 +71,34 @@ class MonitorImageDataset(ImageDataset):
         return img_input, target, label_dataset
 
 
+class StratifiedBatchSampler:
+    """Stratified batch sampling
+    Provides equal representation of target classes in each batch
+    """
+    def __init__(self, y: np.ndarray, batch_size: int, shuffle: bool):
+
+        self.n_batches = int(len(y) / batch_size)
+
+        self.skf = StratifiedKFold(n_splits=self.n_batches, shuffle=shuffle)
+        
+        self.y = ((y == COEF_K).mean(axis=1) > 0).astype(int)
+
+        self.shuffle = shuffle
+
+    def __iter__(self):
+        if self.shuffle:
+            self.skf.random_state = torch.randint(0,int(1e8),size=()).item()
+            
+        for _, test_idx in self.skf.split(self.y, self.y):
+            yield test_idx
+
+    def __len__(self):
+        return self.n_batches
+
 def get_unlearning_dataset(
         config:dict, 
         dataset: dict, get_all: bool = False, 
-        coef_k: float=-2.19722
+        coef_k: float=COEF_K
     ) -> Tuple[np.ndarray, np.ndarray]:
 
     retain_img_dataset = ImageDataset(dataset['retain']['data'])
@@ -117,8 +143,8 @@ def get_unlearning_dataset(
         return input_, targets
 
     return get_unlearning_validation_train(
-        dataset['retain']['data'], target_retain,
-        dataset['forget']['data'], target_forget
+        data_retain=dataset['retain']['data'], target_retain=target_retain,
+        data_forget=dataset['forget']['data'], target_forget=target_forget
     )
 
 
