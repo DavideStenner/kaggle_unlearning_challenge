@@ -6,3 +6,4 @@ config.json
 logs/*
 model/*
 plot/*
+original_script/data/*
