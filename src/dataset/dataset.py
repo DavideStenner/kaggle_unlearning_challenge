@@ -12,6 +12,8 @@ from sklearn.model_selection import StratifiedKFold
 from src.utils import free_memory
 from src.dataset.utility import load_model
 
+from torch import nn
+
 COEF_K = -2.19722
 class ImageDataset(Dataset):
     def __init__(self,

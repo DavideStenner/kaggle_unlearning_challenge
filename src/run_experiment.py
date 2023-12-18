@@ -6,7 +6,6 @@ import pandas as pd
 import seaborn as sns
 import pytorch_lightning as pl
 
-from torch import nn
 from torch.utils.data import DataLoader
 
 from src.utils import get_all_config

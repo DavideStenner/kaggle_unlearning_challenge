@@ -1,5 +1,6 @@
 import torch
 
+import torch.nn.functional as F
 import numpy as np
 import pytorch_lightning as pl
 
@@ -22,7 +23,7 @@ class UnLearner(pl.LightningModule):
 
         self.monitor_dataset = monitor_dataset
         self.model = load_model(config)
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.KLDivLoss(reduction="batchmean", log_target=True)
         
         self.step_outputs = {
             'train': [],
@@ -37,8 +38,11 @@ class UnLearner(pl.LightningModule):
         pred: torch.tensor | Dict, 
         labels: torch.tensor
     ) -> Tuple[torch.tensor, torch.tensor, torch.tensor]:
+        prob_labels = F.log_softmax(labels, dim=1)
+        prob_pred = F.log_softmax(pred, dim=1)
 
-        loss = self.criterion(pred, labels)
+        loss = self.criterion(prob_pred, prob_labels)
+
         return loss, pred, labels
     
     def training_step(self, batch, batch_idx):
@@ -103,9 +107,8 @@ class UnLearner(pl.LightningModule):
             accuracy = (pred_label==unlearning_target[mask_dataset]).mean()
             results[dataset_label] = accuracy
 
-        results['diff_forget'] = np.abs(results['forget'] - results['test'])
-        results['diff_retain'] = np.abs(results['retain'] - results['train'])
-
+        results['forget_test'] = np.abs(results['forget'] - results['test'])
+        results['retain_train'] = np.abs(results['retain'] - results['train'])        
 
         return results
 
@@ -129,10 +132,11 @@ class UnLearner(pl.LightningModule):
         
             #evaluate on all dataset
             if mode != 'train':
+                self.eval()
                 metric_score = {}
 
                 preds = [out['pred'] for out in outputs]
-                preds = torch.sigmoid(torch.cat(preds))
+                preds = F.softmax(torch.cat(preds), dim=1)
                 
                 labels = [out['labels'] for out in outputs]
                 labels = torch.cat(labels)
